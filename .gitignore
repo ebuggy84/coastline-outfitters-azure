@@ -1,0 +1,24 @@
+# Terraform working folder (downloaded providers, local backend settings)
+.terraform/
+
+# State files can contain secrets
+*.tfstate
+*.tfstate.*
+
+# Variable files often contain secrets
+*.tfvars
+*.tfvars.json
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config
+.terraformrc
+terraform.rc
