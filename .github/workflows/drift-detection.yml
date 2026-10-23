@@ -1,0 +1,44 @@
+name: Drift Detection
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_USE_OIDC: "true"
+
+jobs:
+  detect-drift:
+    name: Check for configuration drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Initialize
+        run: terraform init -input=false
+
+      - name: Check for drift
+        id: plan
+        run: terraform plan -detailed-exitcode -input=false -no-color -lock-timeout=60s
+        continue-on-error: true
+
+      - name: Report result
+        run: |
+          if [ "${{ steps.plan.outcome }}" == "failure" ]; then
+            echo "::warning::Drift detected or plan error. The live environment no longer matches the committed configuration. Review the plan output above."
+            exit 1
+          else
+            echo "No drift detected. Live environment matches the committed configuration."
+          fi
