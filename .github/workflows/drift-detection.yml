@@ -31,13 +31,20 @@ jobs:
 
       - name: Check for drift
         id: plan
-        run: terraform plan -detailed-exitcode -input=false -no-color -lock-timeout=60s
-        continue-on-error: true
+        run: |
+          set +e
+          terraform plan -detailed-exitcode -input=false -no-color -lock-timeout=60s
+          code=$?
+          echo "exitcode=$code" >> "$GITHUB_OUTPUT"
+          if [ $code -eq 1 ]; then
+            exit 1
+          fi
+          exit 0
 
       - name: Report result
         run: |
-          if [ "${{ steps.plan.outcome }}" == "failure" ]; then
-            echo "::warning::Drift detected or plan error. The live environment no longer matches the committed configuration. Review the plan output above."
+          if [ "${{ steps.plan.outputs.exitcode }}" == "2" ]; then
+            echo "::warning::Drift detected. The live environment no longer matches the committed configuration. Review the plan output above."
             exit 1
           else
             echo "No drift detected. Live environment matches the committed configuration."
